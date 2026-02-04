@@ -14,5 +14,3 @@ Thumbs.db
 # OS cache
 node_modules/
 .cache/
-
-AGENTS.md
