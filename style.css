@@ -66,19 +66,16 @@ input[type=range]::-webkit-slider-thumb {
     position: relative;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     min-height: 400px;
     max-height: 70vh;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .canvas-viewport canvas {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto !important;
-    height: auto !important;
-    object-fit: contain;
+    display: block;
+    margin: auto;
 }
 
 .glass {

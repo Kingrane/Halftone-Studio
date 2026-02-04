@@ -35,7 +35,7 @@ var HalftoneApp = {
         var rMultBase = parseFloat(radiusInput.value);
         var rMult = rMultBase;
 
-        var maxDim = 2000;
+        var maxDim = 1920;
         var width = Math.min(video.videoWidth, maxDim);
         var height = width * (video.videoHeight / video.videoWidth);
 
@@ -410,7 +410,7 @@ function render(time = 0) {
 
     let width = originalImage.width;
     let height = originalImage.height;
-    const maxDim = 2000;
+    const maxDim = 1920;
     if (width > maxDim || height > maxDim) {
         const ratio = width / height;
         if (ratio > 1) { width = maxDim; height = maxDim / ratio; }
