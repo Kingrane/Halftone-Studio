@@ -15,4 +15,4 @@ Thumbs.db
 node_modules/
 .cache/
 
-AGENTS.node_modules
+AGENTS.md
