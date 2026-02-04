@@ -1,5 +1,5 @@
 // Video processing module
-(function() {
+(function () {
 
     var videoMediaRecorder = null;
     var videoChunks = [];
@@ -16,7 +16,7 @@
         if (!videoFileInput) return;
         if (!videoExportBtn) return;
 
-        videoFileInput.addEventListener('change', function(e) {
+        videoFileInput.addEventListener('change', function (e) {
             var file = e.target.files[0];
             if (!file) return;
 
@@ -33,7 +33,7 @@
             loadVideo(file);
         });
 
-        videoExportBtn.addEventListener('click', function() {
+        videoExportBtn.addEventListener('click', function () {
             if (currentVideo) {
                 exportVideo();
             }
@@ -195,7 +195,7 @@
                 currentVideo.currentTime = currentTime;
                 setTimeout(processNextFrame, frameInterval);
             } else {
-                setTimeout(function() {
+                setTimeout(function () {
                     if (videoMediaRecorder && videoMediaRecorder.state === 'recording') {
                         videoMediaRecorder.stop();
                     }
