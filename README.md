@@ -27,7 +27,6 @@ Web-based image and video effects editor with Material Design 3 interface.
 - `style.css` - Styles and responsive design
 - `script.js` - Application logic
 - `video.js` - Video processing module
-- `AGENTS.md` - Guidelines for AI agents
 
 ## Technologies
 
