@@ -37,27 +37,17 @@
                     <button onclick="setLang('en')" id="lang-en"
                         class="px-3 py-1 rounded-full text-xs transition-colors">EN</button>
                 </div>
-                <input type="file" id="upload" accept="image/*" class="hidden">
-                <input type="file" id="videoFile" accept="video/*" class="hidden">
-                <button onclick="document.getElementById('upload').click()"
-                    class="m3-button m3-button-primary px-6 py-3 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    <span id="uploadBtnText">Загрузить</span>
-                </button>
-                <button onclick="document.getElementById('videoFile').click()"
-                    class="m3-button border border-[#49454F] text-gray-300 px-4 py-3 flex items-center gap-2 hover:bg-[#2B2930]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="23 7 16 12 23 17 23 7" />
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                    </svg>
-                    <span id="videoBtnText">Видео</span>
-                </button>
+<input type="file" id="upload" accept="image/*" class="hidden">
+          <button onclick="document.getElementById('upload').click()"
+            class="m3-button m3-button-primary px-6 py-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span id="uploadBtnText">Загрузить</span>
+          </button>
             </div>
         </header>
 
@@ -71,8 +61,8 @@
                                 class="mode-btn m3-button border border-[#49454F] py-2 text-sm bg-[#49454F]">Classic</button>
                             <button onclick="setMode('rgb')" id="btn-rgb"
                                 class="mode-btn m3-button border border-[#49454F] py-2 text-sm">RGB Dots</button>
-                            <button onclick="setMode('led')" id="btn-led"
-                                class="mode-btn m3-button border border-[#49454F] py-2 text-sm">LED Glow</button>
+<button onclick="setMode('dither')" id="btn-dither"
+              class="mode-btn m3-button border border-[#49454F] py-2 text-sm">Dither</button>
                             <button onclick="setMode('squares')" id="btn-squares"
                                 class="mode-btn m3-button border border-[#49454F] py-2 text-sm">Blocks</button>
                             <button onclick="setMode('ascii')" id="btn-ascii"
@@ -170,19 +160,7 @@
                         <div id="progressBar" class="loading-bar rounded-full"></div>
                     </div>
                 </div>
-                <div id="videoProgress" class="hidden m3-card p-4">
-                    <div class="text-xs mb-2 flex justify-between">
-                        <span id="videoProgressLabel">Обработка видео...</span>
-                        <span id="videoProgressText">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-1">
-                        <div id="videoProgressBar" class="loading-bar rounded-full"></div>
-                    </div>
-                </div>
-                <button id="exportVideoBtn"
-                    class="hidden w-full m3-button border border-[#D0BCFF] text-[#D0BCFF] py-3 mt-4 flex items-center justify-center gap-2 hover:bg-[#D0BCFF] hover:text-[#381E72]">
-                    <span>Сохранить видео</span>
-                </button>
+
             </aside>
 
             <main class="lg:col-span-8">
@@ -213,8 +191,7 @@
         </a>
     </footer>
 
-    <script src="script.js"></script>
-    <script src="video.js"></script>
+<script src="script.js"></script>
 
     <!-- About Modal -->
     <div id="aboutModal" class="fixed inset-0 z-50 hidden">
@@ -236,18 +213,18 @@
                 <div class="space-y-6 text-gray-300">
                     <div>
                         <h3 class="text-[#D0BCFF] font-medium mb-2" id="aboutDescTitle">Что это?</h3>
-                        <p class="text-sm leading-relaxed" id="aboutDesc">Halftone Studio - бесплатный инструмент для
-                            создания креативных эффектов на основе анализа яркости изображения. Применяйте стили
-                            halftone, RGB-точки, LED-эффект, ASCII-арт и многое другое.</p>
+<p class="text-sm leading-relaxed" id="aboutDesc">Halftone Studio - бесплатный инструмент для
+              создания креативных эффектов на основе анализа яркости изображения. Применяйте стили
+              halftone, RGB-точки, Dither, ASCII-арт и многое другое.</p>
                     </div>
 
                     <div>
                         <h3 class="text-[#D0BCFF] font-medium mb-2" id="aboutHowTitle">Как использовать</h3>
                         <ol class="text-sm space-y-2 list-decimal list-inside">
-                            <li id="aboutHow1">Загрузите изображение или видео</li>
+                            <li id="aboutHow1">Загрузите изображение</li>
                             <li id="aboutHow2">Выберите визуальный стиль</li>
                             <li id="aboutHow3">Настройте параметры сетки и эффектов</li>
-                            <li id="aboutHow4">Сохраните результат в PNG, GIF или видео</li>
+                            <li id="aboutHow4">Сохраните результат в PNG или GIF</li>
                         </ol>
                     </div>
 

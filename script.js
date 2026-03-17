@@ -9,120 +9,21 @@ const downloadBtn = document.getElementById('downloadBtn');
 const exportGifBtn = document.getElementById('exportGifBtn');
 const resetBtn = document.getElementById('resetBtn');
 
-let originalImage = null;
-let currentVideo = null;
-let gifWorkerBlob = null;
-let currentLang = localStorage.getItem('lang') || 'ru';
-let currentMode = 'classic';
-let animFrame = 0;
-let isAnimating = false;
-let isVideoLoaded = false;
+let originalImage = null
+let gifWorkerBlob = null
+let currentLang = localStorage.getItem('lang') || 'ru'
+let currentMode = 'classic'
+let animFrame = 0
+let isAnimating = false
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
 
 var HalftoneApp = {
-    updateButtonsForImage: function () {
-        if (downloadBtn) downloadBtn.disabled = false;
-        if (exportGifBtn) exportGifBtn.disabled = !animateToggle.checked;
-    },
-    updateButtonsForVideo: function () {
-        if (downloadBtn) downloadBtn.disabled = true;
-        if (exportGifBtn) exportGifBtn.disabled = true;
-    },
-    renderVideoToCanvas: function (video) {
-        var res = parseInt(resInput.value);
-        var contrast = parseFloat(contrastInput.value);
-        var rMultBase = parseFloat(radiusInput.value);
-        var rMult = rMultBase;
-
-        var maxDim = 1920;
-        var width = Math.min(video.videoWidth, maxDim);
-        var height = width * (video.videoHeight / video.videoWidth);
-
-        canvas.width = width;
-        canvas.height = height;
-
-        var tempCanvas = document.createElement('canvas');
-        var tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        tempCtx.filter = 'contrast(' + contrast + ')';
-        tempCtx.drawImage(video, 0, 0, width, height);
-
-        var imageData = tempCtx.getImageData(0, 0, width, height).data;
-
-        ctx.fillStyle = (currentMode === 'classic') ? '#ffffff' : '#000000';
-        ctx.fillRect(0, 0, width, height);
-
-        var asciiChars = ' @%#*+=-:. ';
-        var asciiLen = asciiChars.length;
-
-        for (var y = 0; y < height; y += res) {
-            for (var x = 0; x < width; x += res) {
-                var idx = (Math.floor(y) * width + Math.floor(x)) * 4;
-                var r = imageData[idx];
-                var g = imageData[idx + 1];
-                var b = imageData[idx + 2];
-                var brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-
-                ctx.beginPath();
-
-                if (currentMode === 'classic') {
-                    ctx.fillStyle = '#000000';
-                    var radius = (res / 2) * (1 - brightness) * rMult;
-                    ctx.arc(x + res / 2, y + res / 2, Math.max(0, radius), 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                else if (currentMode === 'rgb') {
-                    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-                    radius = (res / 2.2) * brightness * rMult;
-                    ctx.arc(x + res / 2, y + res / 2, Math.max(0, radius), 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                else if (currentMode === 'led') {
-                    radius = (res / 2.5) * brightness * rMult;
-                    if (radius > 0.5) {
-                        ctx.shadowBlur = res * 0.8;
-                        ctx.shadowColor = 'rgb(' + r + ',' + g + ',' + b + ')';
-                        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-                        ctx.arc(x + res / 2, y + res / 2, radius, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.shadowBlur = 0;
-                    }
-                }
-                else if (currentMode === 'squares') {
-                    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-                    var size = res * brightness * rMult;
-                    ctx.fillRect(x + (res - size) / 2, y + (res - size) / 2, size, size);
-                }
-                else if (currentMode === 'ascii') {
-                    var charIdx = Math.floor((1 - brightness) * (asciiLen - 1));
-                    var char = asciiChars[Math.min(charIdx, asciiLen - 1)];
-                    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-                    ctx.font = Math.floor(res * 0.85 * rMult) + 'px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(char, x + res / 2, y + res / 2);
-                }
-                else if (currentMode === 'duotone') {
-                    var duotoneColor1 = document.getElementById('duotoneColor1').value;
-                    var duotoneColor2 = document.getElementById('duotoneColor2').value;
-                    var color1 = hexToRgb(duotoneColor1);
-                    var color2 = hexToRgb(duotoneColor2);
-                    var dr = color2.r - color1.r;
-                    var dg = color2.g - color1.g;
-                    var db = color2.b - color1.b;
-                    var duotoneR = Math.round(color1.r + dr * brightness);
-                    var duotoneG = Math.round(color1.g + dg * brightness);
-                    var duotoneB = Math.round(color1.b + db * brightness);
-                    ctx.fillStyle = 'rgb(' + duotoneR + ',' + duotoneG + ',' + duotoneB + ')';
-                    var size = res * brightness * rMult;
-                    ctx.fillRect(x + (res - size) / 2, y + (res - size) / 2, size, size);
-                }
-            }
-        }
-    }
-};
+  updateButtonsForImage: function () {
+    if (downloadBtn) downloadBtn.disabled = false
+    if (exportGifBtn) exportGifBtn.disabled = !animateToggle.checked
+  }
+}
 
 const translations = {
     ru: {
@@ -147,17 +48,14 @@ const translations = {
         aboutBtn: 'О сервисе',
         aboutTitle: 'О сервисе',
         aboutDescTitle: 'Что это?',
-        aboutDesc: 'Halftone Studio - бесплатный инструмент для создания креативных эффектов на основе анализа яркости изображения. Применяйте стили halftone, RGB-точки, LED-эффект, ASCII-арт и многое другое.',
-        aboutHowTitle: 'Как использовать',
-        aboutHow1: 'Загрузите изображение или видео',
-        aboutHow2: 'Выберите визуальный стиль',
-        aboutHow3: 'Настройте параметры сетки и эффектов',
-        aboutHow4: 'Сохраните результат в PNG, GIF или видео',
-        aboutDonateTitle: 'Поддержать автора',
-        aboutDonateDesc: 'Если инструмент оказался полезным, вы можете поддержать его развитие:',
-        videoBtn: 'Видео',
-        videoProgress: 'Обработка видео...',
-        saveVideo: 'Сохранить видео',
+aboutDesc: 'Halftone Studio - бесплатный инструмент для создания креативных эффектов на основе анализа яркости изображения. Применяйте стили halftone, RGB-точки, Dither, ASCII-арт и многое другое.',
+    aboutHowTitle: 'Как использовать',
+    aboutHow1: 'Загрузите изображение',
+    aboutHow2: 'Выберите визуальный стиль',
+    aboutHow3: 'Настройте параметры сетки и эффектов',
+    aboutHow4: 'Сохраните результат в PNG или GIF',
+    aboutDonateTitle: 'Поддержать автора',
+    aboutDonateDesc: 'Если инструмент оказался полезным, вы можете поддержать его развитие:',
         fileTooLarge: 'Файл слишком большой. Максимальный размер: 30 МБ',
         notAnImage: 'Пожалуйста, выберите изображение',
         duotoneTitle: 'Цвета Duotone',
@@ -186,17 +84,14 @@ const translations = {
         aboutBtn: 'About',
         aboutTitle: 'About',
         aboutDescTitle: 'What is this?',
-        aboutDesc: 'Halftone Studio is a free tool for creating creative effects based on brightness analysis. Apply halftone styles, RGB dots, LED effects, ASCII art and more.',
-        aboutHowTitle: 'How to use',
-        aboutHow1: 'Upload an image or video',
-        aboutHow2: 'Choose a visual style',
-        aboutHow3: 'Adjust grid and effect parameters',
-        aboutHow4: 'Save the result as PNG, GIF or video',
-        aboutDonateTitle: 'Support the author',
-        aboutDonateDesc: 'If you found this tool useful, you can support its development:',
-        videoBtn: 'Video',
-        videoProgress: 'Processing video...',
-        saveVideo: 'Save video',
+aboutDesc: 'Halftone Studio is a free tool for creating creative effects based on brightness analysis. Apply halftone styles, RGB dots, Dither, ASCII art and more.',
+    aboutHowTitle: 'How to use',
+    aboutHow1: 'Upload an image',
+    aboutHow2: 'Choose a visual style',
+    aboutHow3: 'Adjust grid and effect parameters',
+    aboutHow4: 'Save the result as PNG or GIF',
+    aboutDonateTitle: 'Support the author',
+    aboutDonateDesc: 'If you found this tool useful, you can support its development:',
         fileTooLarge: 'File too large. Maximum size: 30 MB',
         notAnImage: 'Please select an image',
         duotoneTitle: 'Duotone Colors',
@@ -218,9 +113,8 @@ function updateTexts() {
     var downloadBtnText = document.getElementById('downloadBtnText');
     var exportGifBtnText = document.getElementById('exportGifBtnText');
     var resetBtnText = document.getElementById('resetBtnText');
-    var aboutBtnText = document.getElementById('aboutBtnText');
-    var videoBtnText = document.getElementById('videoBtnText');
-    var statusText = document.getElementById('statusText');
+var aboutBtnText = document.getElementById('aboutBtnText');
+  var statusText = document.getElementById('statusText');
     var gifProgressLabel = document.getElementById('gifProgressLabel');
     var dropZoneP = document.querySelector('#dropZone p');
     var gpuLabel = document.querySelector('.gpu-label');
@@ -240,9 +134,8 @@ function updateTexts() {
     if (downloadBtnText) downloadBtnText.textContent = t.download;
     if (exportGifBtnText) exportGifBtnText.textContent = t.exportGif;
     if (resetBtnText) resetBtnText.textContent = t.reset;
-    if (aboutBtnText) aboutBtnText.textContent = t.aboutBtn;
-    if (videoBtnText) videoBtnText.textContent = t.videoBtn;
-    if (statusText) statusText.textContent = originalImage ? t.statusReady(originalImage.width, originalImage.height) : t.statusWait;
+if (aboutBtnText) aboutBtnText.textContent = t.aboutBtn
+  if (statusText) statusText.textContent = originalImage ? t.statusReady(originalImage.width, originalImage.height) : t.statusWait
     if (gifProgressLabel) gifProgressLabel.textContent = t.gifGenerating;
     if (dropZoneP) dropZoneP.textContent = t.dropZone;
     if (gpuLabel) gpuLabel.textContent = t.gpu;
@@ -330,16 +223,11 @@ document.addEventListener('DOMContentLoaded', function () {
         reader.onload = function (event) {
             var img = new Image();
             img.onload = function () {
-                originalImage = img;
-                currentVideo = null;
-                isVideoLoaded = false;
+originalImage = img
 
-                var exportBtn = document.getElementById('exportVideoBtn');
-                if (exportBtn) exportBtn.classList.add('hidden');
-
-                if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
-                    HalftoneApp.updateButtonsForImage();
-                }
+      if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
+        HalftoneApp.updateButtonsForImage()
+      }
 
                 var t = translations[currentLang];
                 var statusTextEl = document.getElementById('statusText');
@@ -371,20 +259,20 @@ const duotoneColor2 = document.getElementById('duotoneColor2');
 let duotoneTimeout = null;
 if (duotoneColor1) {
     duotoneColor1.addEventListener('input', () => {
-        if (duotoneTimeout) clearTimeout(duotoneTimeout);
-        duotoneTimeout = setTimeout(() => {
-            if (originalImage || isVideoLoaded) render();
-        }, 50);
-    });
-}
-if (duotoneColor2) {
+      if (duotoneTimeout) clearTimeout(duotoneTimeout)
+      duotoneTimeout = setTimeout(() => {
+        if (originalImage) render()
+      }, 50)
+    })
+  }
+  if (duotoneColor2) {
     duotoneColor2.addEventListener('input', () => {
-        if (duotoneTimeout) clearTimeout(duotoneTimeout);
-        duotoneTimeout = setTimeout(() => {
-            if (originalImage || isVideoLoaded) render();
-        }, 50);
-    });
-}
+      if (duotoneTimeout) clearTimeout(duotoneTimeout)
+      duotoneTimeout = setTimeout(() => {
+        if (originalImage) render()
+      }, 50)
+    })
+  }
 
 animateToggle.addEventListener('change', (e) => {
     isAnimating = e.target.checked;
@@ -457,17 +345,23 @@ function render(time = 0) {
                 ctx.arc(x + res / 2, y + res / 2, Math.max(0, radius), 0, Math.PI * 2);
                 ctx.fill();
             }
-            else if (currentMode === 'led') {
-                const radius = (res / 2.5) * brightness * rMult;
-                if (radius > 0.5) {
-                    ctx.shadowBlur = res * 0.8;
-                    ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.arc(x + res / 2, y + res / 2, radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                }
-            }
+else if (currentMode === 'dither') {
+      const bayerMatrix = [
+        [0, 8, 2, 10],
+        [12, 4, 14, 6],
+        [3, 11, 1, 9],
+        [15, 7, 13, 5]
+      ]
+      const matrixSize = 4
+      const threshold = bayerMatrix[y % matrixSize][x % matrixSize] / 16
+      const ditherBrightness = brightness + (threshold - 0.5) * rMult
+      const clampedBrightness = Math.max(0, Math.min(1, ditherBrightness))
+      const ditherR = Math.round(r * clampedBrightness)
+      const ditherG = Math.round(g * clampedBrightness)
+      const ditherB = Math.round(b * clampedBrightness)
+      ctx.fillStyle = `rgb(${ditherR}, ${ditherG}, ${ditherB})`
+      ctx.fillRect(x, y, res, res)
+    }
             else if (currentMode === 'squares') {
                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                 const size = res * brightness * rMult;
