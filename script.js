@@ -346,20 +346,28 @@ function render(time = 0) {
                 ctx.fill();
             }
 else if (currentMode === 'dither') {
-      const bayerMatrix = [
+      const bayer4x4 = [
         [0, 8, 2, 10],
         [12, 4, 14, 6],
         [3, 11, 1, 9],
         [15, 7, 13, 5]
       ]
       const matrixSize = 4
-      const threshold = bayerMatrix[y % matrixSize][x % matrixSize] / 16
-      const ditherBrightness = brightness + (threshold - 0.5) * rMult
-      const clampedBrightness = Math.max(0, Math.min(1, ditherBrightness))
-      const ditherR = Math.round(r * clampedBrightness)
-      const ditherG = Math.round(g * clampedBrightness)
-      const ditherB = Math.round(b * clampedBrightness)
-      ctx.fillStyle = `rgb(${ditherR}, ${ditherG}, ${ditherB})`
+      const mx = Math.floor(x / res) % matrixSize
+      const my = Math.floor(y / res) % matrixSize
+      const threshold = (bayer4x4[my][mx] + 0.5) / 16
+      const levels = Math.max(2, Math.round(2 + rMult * 6))
+      const levelSize = 255 / (levels - 1)
+      const quantR = Math.round(r / levelSize) * levelSize
+      const quantG = Math.round(g / levelSize) * levelSize
+      const quantB = Math.round(b / levelSize) * levelSize
+      const newR = quantR + (threshold - 0.5) * levelSize
+      const newG = quantG + (threshold - 0.5) * levelSize
+      const newB = quantB + (threshold - 0.5) * levelSize
+      const clampedR = Math.max(0, Math.min(255, Math.round(newR)))
+      const clampedG = Math.max(0, Math.min(255, Math.round(newG)))
+      const clampedB = Math.max(0, Math.min(255, Math.round(newB)))
+      ctx.fillStyle = `rgb(${clampedR}, ${clampedG}, ${clampedB})`
       ctx.fillRect(x, y, res, res)
     }
             else if (currentMode === 'squares') {
