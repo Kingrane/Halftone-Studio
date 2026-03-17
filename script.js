@@ -1,13 +1,16 @@
-const canvas = document.getElementById('mainCanvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const upload = document.getElementById('upload');
-const resInput = document.getElementById('resolution');
-const radiusInput = document.getElementById('radiusMultiplier');
-const contrastInput = document.getElementById('contrast');
-const animateToggle = document.getElementById('animateToggle');
-const downloadBtn = document.getElementById('downloadBtn');
-const exportGifBtn = document.getElementById('exportGifBtn');
-const resetBtn = document.getElementById('resetBtn');
+const canvas = document.getElementById('mainCanvas')
+const ctx = canvas.getContext('2d', { willReadFrequently: true })
+const upload = document.getElementById('upload')
+const resInput = document.getElementById('resolution')
+const radiusInput = document.getElementById('radiusMultiplier')
+const contrastInput = document.getElementById('contrast')
+const animateToggle = document.getElementById('animateToggle')
+const downloadBtn = document.getElementById('downloadBtn')
+const exportGifBtn = document.getElementById('exportGifBtn')
+const resetBtn = document.getElementById('resetBtn')
+const showOriginalBtn = document.getElementById('showOriginalBtn')
+const dropZone = document.getElementById('dropZone')
+const canvasViewport = document.getElementById('canvasViewport')
 
 let originalImage = null
 let gifWorkerBlob = null
@@ -15,6 +18,7 @@ let currentLang = localStorage.getItem('lang') || 'ru'
 let currentMode = 'classic'
 let animFrame = 0
 let isAnimating = false
+let isShowingOriginal = false
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
 
@@ -43,12 +47,12 @@ const translations = {
         statusWait: 'Ожидание изображения...',
         statusReady: (w, h) => `Готово: ${w}x${h}`,
         gifGenerating: 'Генерация GIF...',
-        dropZone: 'Отпустите файл здесь',
-        gpu: 'GPU Accelerated',
-        aboutBtn: 'О сервисе',
-        aboutTitle: 'О сервисе',
-        aboutDescTitle: 'Что это?',
-aboutDesc: 'Halftone Studio - бесплатный инструмент для создания креативных эффектов на основе анализа яркости изображения. Применяйте стили halftone, RGB-точки, Dither, ASCII-арт и многое другое.',
+dropZone: 'Отпустите файл здесь',
+    gpu: 'GPU Accelerated',
+    aboutBtn: 'О сервисе',
+    aboutTitle: 'О сервисе',
+    aboutDescTitle: 'Что это?',
+    aboutDesc: 'Halftone Studio - бесплатный инструмент для создания креативных эффектов на основе анализа яркости изображения. Применяйте стили halftone, RGB-точки, Dither, Atkinson, ASCII-арт и многое другое.',
     aboutHowTitle: 'Как использовать',
     aboutHow1: 'Загрузите изображение',
     aboutHow2: 'Выберите визуальный стиль',
@@ -56,11 +60,13 @@ aboutDesc: 'Halftone Studio - бесплатный инструмент для �
     aboutHow4: 'Сохраните результат в PNG или GIF',
     aboutDonateTitle: 'Поддержать автора',
     aboutDonateDesc: 'Если инструмент оказался полезным, вы можете поддержать его развитие:',
-        fileTooLarge: 'Файл слишком большой. Максимальный размер: 30 МБ',
-        notAnImage: 'Пожалуйста, выберите изображение',
-        duotoneTitle: 'Цвета Duotone',
-        duotoneShadows: 'Тени',
-        duotoneHighlights: 'Света'
+    fileTooLarge: 'Файл слишком большой. Максимальный размер: 30 МБ',
+    notAnImage: 'Пожалуйста, выберите изображение',
+    duotoneTitle: 'Цвета Duotone',
+    duotoneShadows: 'Тени',
+    duotoneHighlights: 'Света',
+    showOriginal: 'Показать оригинал',
+    showingOriginal: 'Оригинал'
     },
     en: {
         title: 'Halftone Studio',
@@ -79,12 +85,12 @@ aboutDesc: 'Halftone Studio - бесплатный инструмент для �
         statusWait: 'Waiting for image...',
         statusReady: (w, h) => `Ready: ${w}x${h}`,
         gifGenerating: 'Generating GIF...',
-        dropZone: 'Drop file here',
-        gpu: 'GPU Accelerated',
-        aboutBtn: 'About',
-        aboutTitle: 'About',
-        aboutDescTitle: 'What is this?',
-aboutDesc: 'Halftone Studio is a free tool for creating creative effects based on brightness analysis. Apply halftone styles, RGB dots, Dither, ASCII art and more.',
+dropZone: 'Drop file here',
+    gpu: 'GPU Accelerated',
+    aboutBtn: 'About',
+    aboutTitle: 'About',
+    aboutDescTitle: 'What is this?',
+    aboutDesc: 'Halftone Studio is a free tool for creating creative effects based on brightness analysis. Apply halftone styles, RGB dots, Dither, Atkinson, ASCII art and more.',
     aboutHowTitle: 'How to use',
     aboutHow1: 'Upload an image',
     aboutHow2: 'Choose a visual style',
@@ -92,11 +98,13 @@ aboutDesc: 'Halftone Studio is a free tool for creating creative effects based o
     aboutHow4: 'Save the result as PNG or GIF',
     aboutDonateTitle: 'Support the author',
     aboutDonateDesc: 'If you found this tool useful, you can support its development:',
-        fileTooLarge: 'File too large. Maximum size: 30 MB',
-        notAnImage: 'Please select an image',
-        duotoneTitle: 'Duotone Colors',
-        duotoneShadows: 'Shadows',
-        duotoneHighlights: 'Highlights'
+    fileTooLarge: 'File too large. Maximum size: 30 MB',
+    notAnImage: 'Please select an image',
+    duotoneTitle: 'Duotone Colors',
+    duotoneShadows: 'Shadows',
+    duotoneHighlights: 'Highlights',
+    showOriginal: 'Show original',
+    showingOriginal: 'Original'
     }
 };
 
@@ -113,32 +121,34 @@ function updateTexts() {
     var downloadBtnText = document.getElementById('downloadBtnText');
     var exportGifBtnText = document.getElementById('exportGifBtnText');
     var resetBtnText = document.getElementById('resetBtnText');
-var aboutBtnText = document.getElementById('aboutBtnText');
-  var statusText = document.getElementById('statusText');
-    var gifProgressLabel = document.getElementById('gifProgressLabel');
-    var dropZoneP = document.querySelector('#dropZone p');
-    var gpuLabel = document.querySelector('.gpu-label');
+var aboutBtnText = document.getElementById('aboutBtnText')
+  var statusText = document.getElementById('statusText')
+  var gifProgressLabel = document.getElementById('gifProgressLabel')
+  var dropZoneP = document.querySelector('#dropZone p')
+  var gpuLabel = document.querySelector('.gpu-label')
+  var showOriginalBtnText = document.getElementById('showOriginalBtnText')
 
-    if (h1) h1.innerHTML = t.title + ' <span class="text-sm font-normal opacity-50">:D</span>';
-    if (headerP) headerP.textContent = t.subtitle;
-    if (uploadBtnText) uploadBtnText.textContent = t.upload;
-    if (sectionH2[0]) sectionH2[0].textContent = t.modesTitle;
-    if (sectionH2[1]) sectionH2[1].textContent = t.paramsTitle;
-    if (resValPrev && resValPrev.previousElementSibling) resValPrev.previousElementSibling.textContent = t.density;
-    if (radiusValPrev && radiusValPrev.previousElementSibling) radiusValPrev.previousElementSibling.textContent = t.radius;
-    if (contrastValPrev && contrastValPrev.previousElementSibling) contrastValPrev.previousElementSibling.textContent = t.contrast;
+  if (h1) h1.innerHTML = t.title + ' <span class="text-sm font-normal opacity-50">:D</span>'
+  if (headerP) headerP.textContent = t.subtitle
+  if (uploadBtnText) uploadBtnText.textContent = t.upload
+  if (sectionH2[0]) sectionH2[0].textContent = t.modesTitle
+  if (sectionH2[1]) sectionH2[1].textContent = t.paramsTitle
+  if (resValPrev && resValPrev.previousElementSibling) resValPrev.previousElementSibling.textContent = t.density
+  if (radiusValPrev && radiusValPrev.previousElementSibling) radiusValPrev.previousElementSibling.textContent = t.radius
+  if (contrastValPrev && contrastValPrev.previousElementSibling) contrastValPrev.previousElementSibling.textContent = t.contrast
     if (animateToggleParent && animateToggleParent.parentElement && animateToggleParent.parentElement.parentElement) {
         animateToggleParent.parentElement.parentElement.querySelector('.text-sm').textContent = t.animation;
         animateToggleParent.parentElement.parentElement.querySelector('.text-xs').textContent = t.animationDesc;
     }
-    if (downloadBtnText) downloadBtnText.textContent = t.download;
-    if (exportGifBtnText) exportGifBtnText.textContent = t.exportGif;
-    if (resetBtnText) resetBtnText.textContent = t.reset;
-if (aboutBtnText) aboutBtnText.textContent = t.aboutBtn
+if (downloadBtnText) downloadBtnText.textContent = t.download
+  if (exportGifBtnText) exportGifBtnText.textContent = t.exportGif
+  if (resetBtnText) resetBtnText.textContent = t.reset
+  if (aboutBtnText) aboutBtnText.textContent = t.aboutBtn
   if (statusText) statusText.textContent = originalImage ? t.statusReady(originalImage.width, originalImage.height) : t.statusWait
-    if (gifProgressLabel) gifProgressLabel.textContent = t.gifGenerating;
-    if (dropZoneP) dropZoneP.textContent = t.dropZone;
-    if (gpuLabel) gpuLabel.textContent = t.gpu;
+  if (gifProgressLabel) gifProgressLabel.textContent = t.gifGenerating
+  if (dropZoneP) dropZoneP.textContent = t.dropZone
+  if (gpuLabel) gpuLabel.textContent = t.gpu
+  if (showOriginalBtnText) showOriginalBtnText.textContent = isShowingOriginal ? t.showingOriginal : t.showOriginal
 
     var aboutElements = ['aboutTitle', 'aboutDescTitle', 'aboutDesc', 'aboutHowTitle', 'aboutHow1', 'aboutHow2', 'aboutHow3', 'aboutHow4', 'aboutDonateTitle', 'aboutDonateDesc'];
     aboutElements.forEach(function (id) {
@@ -187,104 +197,235 @@ function setMode(mode) {
         } else {
             duotoneSection.classList.add('hidden');
         }
-    }
+}
 
-    if (originalImage) render();
+if (originalImage) render()
 }
 
 async function createGifWorkerBlob() {
-    const workerCode = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js')
-        .then(r => r.text());
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    gifWorkerBlob = URL.createObjectURL(blob);
+const workerCode = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js')
+.then(r => r.text())
+const blob = new Blob([workerCode], { type: 'application/javascript' })
+gifWorkerBlob = URL.createObjectURL(blob)
 }
-createGifWorkerBlob();
+createGifWorkerBlob()
+
+function loadImageFromUrl(url) {
+var img = new Image()
+img.onload = function () {
+originalImage = img
+if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
+HalftoneApp.updateButtonsForImage()
+}
+if (showOriginalBtn) showOriginalBtn.disabled = false
+var t = translations[currentLang]
+var statusTextEl = document.getElementById('statusText')
+if (statusTextEl) statusTextEl.textContent = t.statusReady(img.width, img.height)
+render()
+}
+img.src = url
+}
 
 document.addEventListener('DOMContentLoaded', function () {
-    exportGifBtn.disabled = !animateToggle.checked;
+exportGifBtn.disabled = !animateToggle.checked
+loadImageFromUrl('example.jpg')
 
-    upload.addEventListener('change', function (e) {
-        var file = e.target.files[0];
-        if (!file) return;
+upload.addEventListener('change', function (e) {
+var file = e.target.files[0]
+if (!file) return
 
-        if (file.size > MAX_FILE_SIZE) {
-            var t = translations[currentLang];
-            alert(t.fileTooLarge || 'Файл слишком большой. Максимальный размер: 30 МБ');
-            return;
-        }
+if (file.size > MAX_FILE_SIZE) {
+var t = translations[currentLang]
+alert(t.fileTooLarge || 'Файл слишком большой. Максимальный размер: 30 МБ')
+return
+}
 
-        if (!file.type.startsWith('image/')) {
-            var t = translations[currentLang];
-            alert(t.notAnImage || 'Пожалуйста, выберите изображение');
-            return;
-        }
+if (!file.type.startsWith('image/')) {
+var t = translations[currentLang]
+alert(t.notAnImage || 'Пожалуйста, выберите изображение')
+return
+}
 
-        var reader = new FileReader();
-        reader.onload = function (event) {
-            var img = new Image();
-            img.onload = function () {
+var reader = new FileReader()
+reader.onload = function (event) {
+var img = new Image()
+img.onload = function () {
 originalImage = img
+if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
+HalftoneApp.updateButtonsForImage()
+}
+if (showOriginalBtn) showOriginalBtn.disabled = false
+var t = translations[currentLang]
+var statusTextEl = document.getElementById('statusText')
+if (statusTextEl) statusTextEl.textContent = t.statusReady(img.width, img.height)
+render()
+}
+img.src = event.target.result
+}
+reader.readAsDataURL(file)
+})
 
-      if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
-        HalftoneApp.updateButtonsForImage()
-      }
+if (canvasViewport) {
+canvasViewport.addEventListener('dragover', (e) => {
+e.preventDefault()
+e.stopPropagation()
+dropZone.classList.remove('hidden')
+})
 
-                var t = translations[currentLang];
-                var statusTextEl = document.getElementById('statusText');
-                if (statusTextEl) statusTextEl.textContent = t.statusReady(img.width, img.height);
-                render();
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-});
+canvasViewport.addEventListener('dragleave', (e) => {
+e.preventDefault()
+e.stopPropagation()
+dropZone.classList.add('hidden')
+})
 
-const inputs = [resInput, radiusInput, contrastInput];
+canvasViewport.addEventListener('drop', (e) => {
+e.preventDefault()
+e.stopPropagation()
+dropZone.classList.add('hidden')
+
+var file = e.dataTransfer.files[0]
+if (!file) return
+
+if (file.size > MAX_FILE_SIZE) {
+var t = translations[currentLang]
+alert(t.fileTooLarge || 'Файл слишком большой. Максимальный размер: 30 МБ')
+return
+}
+
+if (!file.type.startsWith('image/')) {
+var t = translations[currentLang]
+alert(t.notAnImage || 'Пожалуйста, выберите изображение')
+return
+}
+
+var reader = new FileReader()
+reader.onload = function (event) {
+var img = new Image()
+img.onload = function () {
+originalImage = img
+if (HalftoneApp && HalftoneApp.updateButtonsForImage) {
+HalftoneApp.updateButtonsForImage()
+}
+if (showOriginalBtn) showOriginalBtn.disabled = false
+var t = translations[currentLang]
+var statusTextEl = document.getElementById('statusText')
+if (statusTextEl) statusTextEl.textContent = t.statusReady(img.width, img.height)
+render()
+}
+img.src = event.target.result
+}
+reader.readAsDataURL(file)
+})
+}
+
+if (showOriginalBtn) {
+showOriginalBtn.addEventListener('mousedown', () => {
+if (!originalImage) return
+isShowingOriginal = true
+var t = translations[currentLang]
+var showOriginalBtnText = document.getElementById('showOriginalBtnText')
+if (showOriginalBtnText) showOriginalBtnText.textContent = t.showingOriginal
+renderOriginal()
+})
+
+showOriginalBtn.addEventListener('mouseup', () => {
+isShowingOriginal = false
+var t = translations[currentLang]
+var showOriginalBtnText = document.getElementById('showOriginalBtnText')
+if (showOriginalBtnText) showOriginalBtnText.textContent = t.showOriginal
+render()
+})
+
+showOriginalBtn.addEventListener('mouseleave', () => {
+if (isShowingOriginal) {
+isShowingOriginal = false
+var t = translations[currentLang]
+var showOriginalBtnText = document.getElementById('showOriginalBtnText')
+if (showOriginalBtnText) showOriginalBtnText.textContent = t.showOriginal
+render()
+}
+})
+
+showOriginalBtn.addEventListener('touchstart', (e) => {
+e.preventDefault()
+if (!originalImage) return
+isShowingOriginal = true
+var t = translations[currentLang]
+var showOriginalBtnText = document.getElementById('showOriginalBtnText')
+if (showOriginalBtnText) showOriginalBtnText.textContent = t.showingOriginal
+renderOriginal()
+})
+
+showOriginalBtn.addEventListener('touchend', () => {
+isShowingOriginal = false
+var t = translations[currentLang]
+var showOriginalBtnText = document.getElementById('showOriginalBtnText')
+if (showOriginalBtnText) showOriginalBtnText.textContent = t.showOriginal
+render()
+})
+}
+})
+
+const inputs = [resInput, radiusInput, contrastInput]
 const valueLabels = {
-    resolution: 'resVal',
-    radiusMultiplier: 'radiusVal',
-    contrast: 'contrastVal'
-};
+resolution: 'resVal',
+radiusMultiplier: 'radiusVal',
+contrast: 'contrastVal'
+}
 inputs.forEach(input => {
-    input.addEventListener('input', () => {
-        const valEl = document.getElementById(valueLabels[input.id]);
-        if (valEl) valEl.innerText = input.value;
-        if (originalImage) render();
-    });
-});
+input.addEventListener('input', () => {
+const valEl = document.getElementById(valueLabels[input.id])
+if (valEl) valEl.innerText = input.value
+if (originalImage) render()
+})
+})
 
-const duotoneColor1 = document.getElementById('duotoneColor1');
-const duotoneColor2 = document.getElementById('duotoneColor2');
-let duotoneTimeout = null;
+const duotoneColor1 = document.getElementById('duotoneColor1')
+const duotoneColor2 = document.getElementById('duotoneColor2')
+let duotoneTimeout = null
 if (duotoneColor1) {
-    duotoneColor1.addEventListener('input', () => {
-      if (duotoneTimeout) clearTimeout(duotoneTimeout)
-      duotoneTimeout = setTimeout(() => {
-        if (originalImage) render()
-      }, 50)
-    })
-  }
-  if (duotoneColor2) {
-    duotoneColor2.addEventListener('input', () => {
-      if (duotoneTimeout) clearTimeout(duotoneTimeout)
-      duotoneTimeout = setTimeout(() => {
-        if (originalImage) render()
-      }, 50)
-    })
-  }
+duotoneColor1.addEventListener('input', () => {
+if (duotoneTimeout) clearTimeout(duotoneTimeout)
+duotoneTimeout = setTimeout(() => {
+if (originalImage) render()
+}, 50)
+})
+}
+if (duotoneColor2) {
+duotoneColor2.addEventListener('input', () => {
+if (duotoneTimeout) clearTimeout(duotoneTimeout)
+duotoneTimeout = setTimeout(() => {
+if (originalImage) render()
+}, 50)
+})
+}
 
 animateToggle.addEventListener('change', (e) => {
-    isAnimating = e.target.checked;
-    exportGifBtn.disabled = !isAnimating;
-    if (isAnimating) animate();
-});
+isAnimating = e.target.checked
+exportGifBtn.disabled = !isAnimating
+if (isAnimating) animate()
+})
 
 function animate() {
-    if (!isAnimating) return;
-    animFrame += 0.05;
-    render(animFrame);
-    requestAnimationFrame(animate);
+if (!isAnimating) return
+animFrame += 0.05
+render(animFrame)
+requestAnimationFrame(animate)
+}
+
+function renderOriginal() {
+if (!originalImage) return
+let width = originalImage.width
+let height = originalImage.height
+const maxDim = 1920
+if (width > maxDim || height > maxDim) {
+const ratio = width / height
+if (ratio > 1) { width = maxDim; height = maxDim / ratio }
+else { height = maxDim; width = maxDim * ratio }
+}
+canvas.width = width
+canvas.height = height
+ctx.drawImage(originalImage, 0, 0, width, height)
 }
 
 function render(time = 0) {
@@ -367,10 +508,37 @@ else if (currentMode === 'dither') {
       const clampedR = Math.max(0, Math.min(255, Math.round(newR)))
       const clampedG = Math.max(0, Math.min(255, Math.round(newG)))
       const clampedB = Math.max(0, Math.min(255, Math.round(newB)))
-      ctx.fillStyle = `rgb(${clampedR}, ${clampedG}, ${clampedB})`
-      ctx.fillRect(x, y, res, res)
-    }
-            else if (currentMode === 'squares') {
+ctx.fillStyle = `rgb(${clampedR}, ${clampedG}, ${clampedB})`
+ctx.fillRect(x, y, res, res)
+}
+else if (currentMode === 'atkinson') {
+const atkinsonThreshold = 0.5
+const levels = Math.max(2, Math.round(2 + rMult * 4))
+const levelSize = 255 / (levels - 1)
+const brightnessLevel = brightness * (levels - 1)
+const floorLevel = Math.floor(brightnessLevel)
+const frac = brightnessLevel - floorLevel
+const atkinsonPattern = [
+[0, 0, 0, 8, 0],
+[0, 0, 0, 8, 4],
+[0, 0, 0, 8, 0],
+[0, 0, 4, 2, 0]
+]
+const ax = Math.floor(x / res) % 5
+const ay = Math.floor(y / res) % 4
+const patternValue = atkinsonPattern[ay][ax] / 16
+let finalLevel = floorLevel
+if (frac > patternValue) {
+finalLevel = Math.min(levels - 1, floorLevel + 1)
+}
+const finalBrightness = finalLevel / (levels - 1)
+const atkR = Math.round(r * finalBrightness)
+const atkG = Math.round(g * finalBrightness)
+const atkB = Math.round(b * finalBrightness)
+ctx.fillStyle = `rgb(${atkR}, ${atkG}, ${atkB})`
+ctx.fillRect(x, y, res, res)
+}
+else if (currentMode === 'squares') {
                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                 const size = res * brightness * rMult;
                 ctx.fillRect(x + (res - size) / 2, y + (res - size) / 2, size, size);
